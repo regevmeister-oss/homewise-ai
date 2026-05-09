@@ -51,7 +51,18 @@ export default function ResultPage() {
   ];
 
   return (
-    <main className="min-h-screen bg-black text-white px-6 py-12" dir="rtl">
+    <main className="relative min-h-screen overflow-hidden text-white px-6 py-12" dir="rtl">
+
+<div
+  className="absolute inset-0 bg-cover bg-center scale-105"
+  style={{ backgroundImage: "url('/backgrounds/home-bg.png')" }}
+/>
+
+<div className="absolute inset-0 bg-black/35" />
+
+<div className="absolute inset-0 backdrop-blur-[2px]" />
+
+<div className="relative z-10">
       <div className="mx-auto max-w-7xl">
         <section className="text-center">
           <div className="text-cyan-300 tracking-[0.4em] text-sm font-bold">
@@ -124,7 +135,7 @@ export default function ResultPage() {
           </div>
         </section>
       </div>
-    </main>
+    </div></main>
   );
 }
 
@@ -159,3 +170,4 @@ function Score({ title, value, danger = false }: any) {
     </div>
   );
 }
+
