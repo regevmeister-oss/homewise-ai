@@ -245,7 +245,7 @@ export default function OnboardingPage() {
           {/* NUMBER */}
           {current.type === "number" && (
             <NumberInput
-              placeholder={current.placeholder}
+              placeholder={current.placeholder || ""}
               onNext={next}
             />
           )}
@@ -331,4 +331,5 @@ function NumberInput({
     </div>
   );
 }
+
 
