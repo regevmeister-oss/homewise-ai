@@ -1,302 +1,194 @@
-"use client";
+﻿"use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { analyzeThirtyYears } from "@/lib/financialEngine";
-
-function money(v: any) {
-  return `₪${Number(v || 0).toLocaleString("he-IL")}`;
-}
-
-function pct(v: any) {
-  return `${Number(v || 0)}%`;
-}
-
-function Mini({ label, value, help }: { label: string; value: string; help?: string }) {
-  return (
-    <div className="rounded-2xl border border-[#E2D8C8] bg-[#FCFAF7] p-5 shadow-sm">
-      <div className="text-sm font-semibold text-[#64748B]">{label}</div>
-      <div className="mt-2 text-2xl font-bold text-[#1F2933]">{value}</div>
-      {help && <div className="mt-2 text-sm leading-relaxed text-[#64748B]">{help}</div>}
-    </div>
-  );
-}
-
-function Field({
-  label,
-  value,
-  onChange,
-  step = 1000,
-}: {
-  label: string;
-  value: number;
-  onChange: (v: number) => void;
-  step?: number;
-}) {
-  return (
-    <div className="rounded-2xl border border-[#E2D8C8] bg-white/80 p-4">
-      <div className="flex items-center justify-between gap-4">
-        <label className="text-sm font-bold text-[#334155]">{label}</label>
-        <div className="text-lg font-black text-[#1F2933]">{money(value)}</div>
-      </div>
-
-      <input
-        type="range"
-        min="0"
-        max={Math.max(value * 2, 50000)}
-        step={step}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="mt-4 w-full accent-[#0F766E]"
-      />
-
-      <input
-        type="number"
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="mt-3 w-full rounded-xl border border-[#E2D8C8] bg-[#FAF7F2] px-4 py-2 text-right text-[#1F2933]"
-      />
-    </div>
-  );
-}
-
-function ForecastGraph({ years }: { years: any[] }) {
-  const points = years.slice(0, 30);
-  const now = new Date().getFullYear();
-
-  const maxValue = Math.max(
-    ...points.map((y) => Number(y.totalMonthlyPressure || 0)),
-    ...points.map((y) => Number(y.income || 0)),
-    1
-  );
-
-  const xOf = (i: number) => 2 + (i / Math.max(points.length - 1, 1)) * 96;
-  const yOf = (v: number) => 82 - (v / maxValue) * 64;
-
-  const pressurePath = points.map((y, i) => {
-    const x = xOf(i);
-    const yy = yOf(Number(y.totalMonthlyPressure || 0));
-    return `${i === 0 ? "M" : "L"} ${x} ${yy}`;
-  }).join(" ");
-
-  const incomePath = points.map((y, i) => {
-    const x = xOf(i);
-    const yy = yOf(Number(y.income || 0));
-    return `${i === 0 ? "M" : "L"} ${x} ${yy}`;
-  }).join(" ");
-
-  return (
-    <section className="rounded-3xl border border-[#E2D8C8] bg-[#FCFAF7] p-6 shadow-sm">
-      <div className="text-sm tracking-[0.35em] text-[#64748B]">תחזית פיננסית</div>
-      <h2 className="mt-3 text-3xl font-bold text-[#1F2933]">גרף תחזית ל־30 השנים הבאות</h2>
-
-      <div className="mt-6 rounded-3xl border border-[#E2D8C8] bg-gradient-to-b from-white to-[#F6F1E8] p-6">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="text-sm font-bold text-[#334155]">₪ לחודש</div>
-
-          <div className="flex gap-5 text-sm font-medium text-[#334155]">
-            <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-emerald-400" />הכנסה חזויה</div>
-            <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-red-400" />לחץ חודשי כולל</div>
-          </div>
-        </div>
-
-        <svg viewBox="0 0 100 92" className="h-[460px] w-full overflow-visible">
-          <defs>
-            <linearGradient id="incomeArea" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor="rgba(52,211,153,0.20)" />
-              <stop offset="100%" stopColor="rgba(52,211,153,0.02)" />
-            </linearGradient>
-            <linearGradient id="pressureArea" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor="rgba(248,113,113,0.18)" />
-              <stop offset="100%" stopColor="rgba(248,113,113,0.02)" />
-            </linearGradient>
-          </defs>
-
-          {[18, 34, 50, 66, 82].map((y, i) => (
-            <g key={i}>
-              <line x1="2" y1={y} x2="98" y2={y} stroke="rgba(100,116,139,0.16)" strokeWidth="0.35" />
-              <text x="0" y={y + 1} fontSize="3" fill="#64748B" textAnchor="middle">
-                {Math.round((maxValue * (82 - y)) / 64 / 1000)}K
-              </text>
-            </g>
-          ))}
-
-          {[0, 5, 10, 15, 20, 25, 29].map((i) => (
-            <g key={`year-${i}`}>
-              <line x1={xOf(i)} y1="18" x2={xOf(i)} y2="82" stroke="rgba(100,116,139,0.09)" strokeWidth="0.25" />
-              
-            </g>
-          ))}
-
-          <path d={`${incomePath} L ${xOf(points.length - 1)} 82 L ${xOf(0)} 82 Z`} fill="url(#incomeArea)" />
-          <path d={`${pressurePath} L ${xOf(points.length - 1)} 82 L ${xOf(0)} 82 Z`} fill="url(#pressureArea)" />
-
-          <path d={incomePath} fill="none" stroke="rgb(16,185,129)" strokeWidth="1.25" strokeLinecap="round" />
-          <path d={pressurePath} fill="none" stroke="rgb(248,113,113)" strokeWidth="1.25" strokeLinecap="round" />
-
-          {points.map((y, i) => (
-            <g key={i}>
-              <circle cx={xOf(i)} cy={yOf(Number(y.income || 0))} r="0.85" fill="rgb(16,185,129)" />
-              <circle cx={xOf(i)} cy={yOf(Number(y.totalMonthlyPressure || 0))} r="0.85" fill="rgb(248,113,113)" />
-            </g>
-          ))}
-        </svg>
-      </div>
-    </section>
-  );
-}
+import { motion } from "framer-motion";
+import CountUp from "react-countup";
+import {
+  FaExclamationTriangle,
+  FaShieldAlt,
+  FaChartLine,
+} from "react-icons/fa";
 
 export default function ResultPage() {
-  const router = useRouter();
-  const [baseAnswers, setBaseAnswers] = useState<any>(null);
-  const [answers, setAnswers] = useState<any>(null);
-
-  useEffect(() => {
-    const raw = localStorage.getItem("homewise_answers") || localStorage.getItem("answers");
-
-    if (!raw) return;
-
-    try {
-      const parsed = JSON.parse(raw);
-      setBaseAnswers(parsed);
-      setAnswers(parsed);
-    } catch {
-      
-    }
-  }, []);
-
-  const result = useMemo(() => {
-    if (!answers) return null;
-    try {
-      return analyzeThirtyYears(answers);
-    } catch {
-      return null;
-    }
-  }, [answers]);
-
-  function update(key: string, value: number) {
-    setAnswers((prev: any) => ({
-      ...prev,
-      [key]: value,
-    }));
-  }
-
-  function resetOriginal() {
-    setAnswers(baseAnswers);
-  }
-
-  function saveScenario() {
-    localStorage.setItem("homewise_answers", JSON.stringify(answers));
-  }
-
-  function restart() {
-    localStorage.clear();
-    router.push("/onboarding");
-  }
-
-  if (!result || !answers) {
-    return (
-      <main className="min-h-screen bg-[#F4EFE6] text-[#1F2933] flex items-center justify-center">
-        אין נתונים להצגה. חזור לשאלון.
-      </main>
-    );
-  }
-
-  const years = Array.isArray(result.years) ? result.years : [];
-  const dangerYears = years.filter((y: any) => Number(y?.pressureRatio || 0) > 62);
-  const freedom = Number(result.safePayment || 0) - Number(result.mortgagePayment || 0);
+  const stressScore = 81;
+  const freedomScore = 42;
 
   return (
-    <main className="min-h-screen bg-[#F4EFE6] px-4 py-6 text-[#1F2933]" dir="rtl">
-      <div className="mx-auto max-w-[1500px] space-y-6">
+    <main className="min-h-screen bg-black text-white overflow-hidden relative">
 
-        <section className="rounded-3xl border border-[#E2D8C8] bg-gradient-to-br from-white to-[#F8F3EA] p-6 shadow-sm">
-          <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
-            <div>
-              <div className="text-sm tracking-[0.35em] text-[#64748B]">HOMEWISE AI</div>
-              <h1 className="mt-3 text-4xl font-black leading-tight text-[#1F2933]">
-                איך אפשר לשפר את סיכויי הקנייה?
-              </h1>
-              <p className="mt-3 max-w-4xl text-lg leading-relaxed text-[#64748B]">
-                שנה את הנתונים וראה מיד איך ההחזר, העומס, החופש הכלכלי והתחזית ל־30 שנה משתנים.
-              </p>
+      {/* BACKGROUND */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black via-zinc-950 to-black opacity-100" />
+
+      <div className="absolute top-0 left-0 w-full h-full opacity-20">
+        <div className="absolute top-[-200px] left-[-100px] w-[500px] h-[500px] bg-red-500 blur-[180px]" />
+        <div className="absolute bottom-[-200px] right-[-100px] w-[500px] h-[500px] bg-emerald-500 blur-[180px]" />
+      </div>
+
+      {/* CONTENT */}
+      <div className="relative z-10 max-w-6xl mx-auto px-6 py-20">
+
+        {/* HERO */}
+        <motion.div
+          initial={{ opacity: 0, y: 80 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1 }}
+          className="text-center"
+        >
+          <h1 className="text-6xl md:text-8xl font-black leading-tight tracking-tight">
+            Your Future
+            <br />
+            Financial Reality
+          </h1>
+
+          <p className="mt-8 text-zinc-400 text-xl max-w-3xl mx-auto leading-relaxed">
+            Banks check if you can survive today.
+            <br />
+            HomeWise checks if your future survives.
+          </p>
+        </motion.div>
+
+        {/* SCORES */}
+        <div className="grid md:grid-cols-2 gap-8 mt-24">
+
+          {/* STRESS SCORE */}
+          <motion.div
+            initial={{ opacity: 0, x: -80 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3, duration: 1 }}
+            className="bg-white/5 border border-red-500/20 rounded-3xl p-10 backdrop-blur-xl shadow-[0_0_60px_rgba(255,0,0,0.15)]"
+          >
+            <div className="flex items-center gap-3 text-red-400 text-xl font-semibold">
+              <FaExclamationTriangle />
+              Future Stress Score
             </div>
 
-            <button onClick={restart} className="rounded-full border border-[#F3B5B5] bg-[#FFF1F1] px-5 py-3 text-sm font-bold text-[#9F1239]">
-              נקה נתונים והתחל מחדש
-            </button>
-          </div>
-        </section>
-
-        <section className="grid gap-5 lg:grid-cols-[420px_1fr]">
-          <div className="rounded-3xl border border-[#E2D8C8] bg-[#FCFAF7] p-6 shadow-sm">
-            <div className="text-sm tracking-[0.35em] text-[#64748B]">סימולציה חיה</div>
-            <h2 className="mt-3 text-2xl font-bold">שנה נתונים ובדוק שיפור</h2>
-
-            <div className="mt-5 space-y-4">
-              <Field label="מחיר נכס" value={Number(answers.propertyPrice || 0)} onChange={(v) => update("propertyPrice", v)} step={50000} />
-              <Field label="הון עצמי" value={Number(answers.equity || 0)} onChange={(v) => update("equity", v)} step={25000} />
-              <Field label="הכנסה חודשית" value={Number(answers.income || 0)} onChange={(v) => update("income", v)} step={1000} />
-              <Field label="הכנסת בן/בת זוג" value={Number(answers.partnerIncome || 0)} onChange={(v) => update("partnerIncome", v)} step={1000} />
-              <Field label="חיסכון זמין" value={Number(answers.savings || 0)} onChange={(v) => update("savings", v)} step={10000} />
-              <Field label="הוצאות מחיה" value={Number(answers.lifestyleCost || 0)} onChange={(v) => update("lifestyleCost", v)} step={500} />
-              <Field label="חובות חודשיים" value={Number(answers.debts || 0)} onChange={(v) => update("debts", v)} step={500} />
+            <div className="mt-8 text-8xl font-black text-red-400">
+              <CountUp end={stressScore} duration={3} />%
             </div>
 
-            <div className="mt-5 grid gap-3">
-              <button onClick={saveScenario} className="rounded-2xl bg-[#0F766E] px-5 py-3 font-bold text-white">
-                שמור תרחיש חדש
-              </button>
-
-              <button onClick={resetOriginal} className="rounded-2xl border border-[#E2D8C8] bg-white px-5 py-3 font-bold text-[#334155]">
-                חזור לנתונים המקוריים
-              </button>
+            <div className="mt-6 h-4 w-full bg-zinc-800 rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${stressScore}%` }}
+                transition={{ duration: 2 }}
+                className="h-full bg-red-500"
+              />
             </div>
-          </div>
 
-          <div className="space-y-5">
-            <section className="grid gap-4 md:grid-cols-4">
-              <Mini label="ציון יציבות" value={String(result.score || 0)} help="ככל שהציון גבוה יותר, העסקה בטוחה יותר." />
-              <Mini label="עומס ביחס להכנסה" value={pct(result.pressureRatio)} help="המדד המרכזי לשחיקת החופש הכלכלי." />
-              <Mini label="החזר משכנתא" value={money(result.mortgagePayment)} help="החזר חודשי משוער לפי הנתונים." />
-              <Mini label="מרווח חופשי" value={money(freedom)} help="פער בין החזר בטוח לבין ההחזר בפועל." />
-            </section>
+            <p className="mt-8 text-zinc-300 leading-relaxed text-lg">
+              Your current financial structure may create
+              long-term pressure under future economic shifts,
+              lifestyle changes, or income instability.
+            </p>
+          </motion.div>
 
-            <section className="rounded-3xl border border-orange-200 bg-orange-50 p-6">
-              <h2 className="text-2xl font-bold text-orange-800">
-                הבית צורך {Math.min(100, Math.max(0, Number(result.pressureRatio || 0)))}% מהחופש הכלכלי שלכם
-              </h2>
-              <p className="mt-3 text-[#64748B]">
-                נסה להוריד מחיר נכס, להגדיל הון עצמי, להקטין חובות או להפחית הוצאות מחיה —
-                ותראה מיד מה הכי משפר את הסיכויים.
-              </p>
-            </section>
-
-            <ForecastGraph years={years} />
-          </div>
-        </section>
-
-        <section className="grid gap-5 md:grid-cols-2">
-          <div className="rounded-3xl border border-[#E2D8C8] bg-[#FCFAF7] p-6">
-            <h2 className="text-2xl font-bold">מה משפר את הסיכויים?</h2>
-            <div className="mt-4 space-y-3 text-[#64748B]">
-              <p>• הורדת מחיר הנכס מקטינה את ההלוואה ואת ההחזר החודשי.</p>
-              <p>• הגדלת הון עצמי מקטינה סיכון ומעלה את ציון היציבות.</p>
-              <p>• הקטנת חובות חודשיים מגדילה את מרווח הנשימה.</p>
-              <p>• הפחתת הוצאות מחיה משפרת את התחזית לאורך שנים.</p>
+          {/* FREEDOM SCORE */}
+          <motion.div
+            initial={{ opacity: 0, x: 80 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.5, duration: 1 }}
+            className="bg-white/5 border border-emerald-500/20 rounded-3xl p-10 backdrop-blur-xl shadow-[0_0_60px_rgba(0,255,150,0.15)]"
+          >
+            <div className="flex items-center gap-3 text-emerald-400 text-xl font-semibold">
+              <FaShieldAlt />
+              Freedom Score
             </div>
+
+            <div className="mt-8 text-8xl font-black text-emerald-400">
+              <CountUp end={freedomScore} duration={3} />%
+            </div>
+
+            <div className="mt-6 h-4 w-full bg-zinc-800 rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${freedomScore}%` }}
+                transition={{ duration: 2 }}
+                className="h-full bg-emerald-500"
+              />
+            </div>
+
+            <p className="mt-8 text-zinc-300 leading-relaxed text-lg">
+              Your future flexibility may decrease over time
+              due to mortgage dependency and rising long-term expenses.
+            </p>
+          </motion.div>
+        </div>
+
+        {/* TIMELINE */}
+        <motion.div
+          initial={{ opacity: 0, y: 80 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8, duration: 1 }}
+          className="mt-24 bg-white/5 rounded-3xl p-10 border border-white/10"
+        >
+          <div className="flex items-center gap-3 text-2xl font-bold">
+            <FaChartLine />
+            Future Pressure Timeline
           </div>
 
-          <div className="rounded-3xl border border-[#E2D8C8] bg-[#FCFAF7] p-6">
-            <h2 className="text-2xl font-bold">המלצה לפי הנתונים הנוכחיים</h2>
-            <p className="mt-4 text-lg leading-relaxed text-[#475569]">{result.recommendation}</p>
-            <div className="mt-4 text-[#64748B]">שנות סכנה בתחזית: {dangerYears.length}</div>
+          <div className="mt-16 flex justify-between items-end h-[250px]">
+
+            <div className="flex flex-col items-center">
+              <motion.div
+                initial={{ height: 0 }}
+                animate={{ height: 80 }}
+                transition={{ duration: 1 }}
+                className="w-16 rounded-t-2xl bg-emerald-500"
+              />
+              <div className="mt-4 text-zinc-400">2026</div>
+            </div>
+
+            <div className="flex flex-col items-center">
+              <motion.div
+                initial={{ height: 0 }}
+                animate={{ height: 130 }}
+                transition={{ duration: 1.3 }}
+                className="w-16 rounded-t-2xl bg-yellow-500"
+              />
+              <div className="mt-4 text-zinc-400">2028</div>
+            </div>
+
+            <div className="flex flex-col items-center">
+              <motion.div
+                initial={{ height: 0 }}
+                animate={{ height: 180 }}
+                transition={{ duration: 1.6 }}
+                className="w-16 rounded-t-2xl bg-orange-500"
+              />
+              <div className="mt-4 text-zinc-400">2031</div>
+            </div>
+
+            <div className="flex flex-col items-center">
+              <motion.div
+                initial={{ height: 0 }}
+                animate={{ height: 230 }}
+                transition={{ duration: 2 }}
+                className="w-16 rounded-t-2xl bg-red-500"
+              />
+              <div className="mt-4 text-zinc-400">2035</div>
+            </div>
+
           </div>
-        </section>
+        </motion.div>
+
+        {/* FINAL WARNING */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.4, duration: 2 }}
+          className="mt-24 text-center"
+        >
+          <div className="text-zinc-500 text-xl">
+            AI Forecast Conclusion
+          </div>
+
+          <div className="mt-6 text-4xl md:text-6xl font-black leading-tight">
+            You may afford this home today.
+            <br />
+            But your future stability is at risk.
+          </div>
+        </motion.div>
 
       </div>
     </main>
   );
 }
-
-
