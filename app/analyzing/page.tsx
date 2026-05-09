@@ -5,7 +5,7 @@ import { useEffect } from "react";
 export default function AnalyzingPage() {
   useEffect(() => {
     const t = setTimeout(() => {
-      window.location.href = "/mortgage-stress-test";
+      window.location.href = "/result";
     }, 3000);
 
     return () => clearTimeout(t);
@@ -28,6 +28,7 @@ export default function AnalyzingPage() {
     </main>
   );
 }
+
 
 
 
