@@ -26,3 +26,10 @@ select,
 button {
   font-family: inherit;
 }
+html {
+  zoom: 0.7;
+}
+
+body {
+  transform-origin: top center;
+}
