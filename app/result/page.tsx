@@ -8,6 +8,11 @@ export default function ResultPage() {
   const [expenses, setExpenses] = useState(9500);
   const [children, setChildren] = useState(2);
   const [savings, setSavings] = useState(180000);
+  const [homePrice, setHomePrice] = useState(2400000);
+  const [equity, setEquity] = useState(600000);
+  const [loans, setLoans] = useState(1500);
+  const [housingGrowth, setHousingGrowth] = useState(3);
+  const [interestShock, setInterestShock] = useState(1.5);
 
   const years = [2026, 2028, 2030, 2032, 2035];
 
@@ -15,8 +20,8 @@ export default function ResultPage() {
     return years.map((year, i) => {
       const inflation = 1 + i * 0.08;
       const childCost = children * 1800 * inflation;
-      const futureExpenses = expenses * inflation + childCost;
-      const futureMortgage = mortgage * (1 + i * 0.035);
+      const futureExpenses = expenses * inflation + childCost + loans;
+      const futureMortgage = (mortgage + loans) * (1 + i * (0.035 + interestShock / 100));
       const futureIncome = income * (1 + i * 0.035);
       const monthlyPressure = futureMortgage + futureExpenses - futureIncome;
       const stress = Math.min(
@@ -170,4 +175,5 @@ function Score({ title, value, danger = false }: any) {
     </div>
   );
 }
+
 
