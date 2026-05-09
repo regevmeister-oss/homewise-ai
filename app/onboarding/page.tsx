@@ -243,12 +243,7 @@ export default function OnboardingPage() {
           )}
 
           {/* NUMBER */}
-          {false && (
-            <NumberInput
-              placeholder={current.placeholder || ""}
-              onNext={next}
-            />
-          )}
+          
 
           {/* BACK */}
           {step > 0 && (
@@ -277,60 +272,5 @@ export default function OnboardingPage() {
     </main>
   );
 }
-
-function NumberInput({
-  placeholder,
-  onNext,
-}: {
-  placeholder: string;
-  onNext: (v: string) => void;
-}) {
-  const [value, setValue] = useState("");
-
-  return (
-    <div className="mt-14">
-
-      <input
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        placeholder={placeholder}
-        className="
-          w-full
-          rounded-3xl
-          border
-          border-white/20
-          bg-black/35
-          px-8
-          py-6
-          text-center
-          text-3xl
-          font-bold
-          outline-none
-          placeholder:text-zinc-500
-        "
-      />
-
-      <button
-        onClick={() => value && onNext(value)}
-        className="
-          mt-8
-          rounded-full
-          bg-cyan-400
-          px-12
-          py-5
-          text-2xl
-          font-black
-          text-black
-          transition
-          hover:scale-105
-        "
-      >
-        המשך
-      </button>
-
-    </div>
-  );
-}
-
 
 
