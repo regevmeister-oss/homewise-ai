@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     "AI system for forecasting financial stability and future pressure before buying a home.",
 
   verification: {
-    google: "wGO71tIjzfs5mCOL5Vz3GQIDO4K3oEVa3twUGHFTP3Q",
+    google: " google4ec28c5d5dacd3af.html",
   },
 };
 
