@@ -10,6 +10,8 @@ export default function ResultPage() {
   const [savings, setSavings] = useState(180000);
   const [homePrice, setHomePrice] = useState(2400000);
   const [equity, setEquity] = useState(600000);
+  const [homePrice, setHomePrice] = useState(2400000);
+  const [equity, setEquity] = useState(600000);
   const [loans, setLoans] = useState(1500);
   const [housingGrowth, setHousingGrowth] = useState(3);
   const [interestShock, setInterestShock] = useState(1.5);
@@ -175,5 +177,6 @@ function Score({ title, value, danger = false }: any) {
     </div>
   );
 }
+
 
 
