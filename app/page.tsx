@@ -60,7 +60,7 @@ export default function HomePage() {
 
           <div className="mt-16 flex justify-center">
             <Link
-              href="/onboarding"
+              href="/analyzing"
               className="rounded-full bg-cyan-400 px-12 py-5 text-2xl font-black text-black transition hover:scale-105 hover:bg-cyan-300"
             >
               התחל שאלון
@@ -71,4 +71,5 @@ export default function HomePage() {
     </main>
   );
 }
+
 
