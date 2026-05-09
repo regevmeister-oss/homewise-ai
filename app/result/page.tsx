@@ -2,159 +2,179 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-type Answers = Record<string, string>;
-
-function valueFromRange(text: string | undefined, fallback: number) {
-  if (!text) return fallback;
-
-  if (text.includes("מעל 45")) return 50000;
-  if (text.includes("30,000") || text.includes("30–45")) return 37000;
-  if (text.includes("20,000") || text.includes("20–30")) return 25000;
-  if (text.includes("12,000") || text.includes("12–20")) return 16000;
-  if (text.includes("עד 12")) return 10000;
-
-  if (text.includes("מעל 6 מיליון")) return 6500000;
-  if (text.includes("4–6")) return 5000000;
-  if (text.includes("2.5–4") || text.includes("2.2–3")) return 3200000;
-  if (text.includes("1.5–2.5") || text.includes("1.5–2.2")) return 2000000;
-  if (text.includes("עד 1.5")) return 1300000;
-
-  if (text.includes("מעל 5 מיליון")) return 5500000;
-  if (text.includes("3–5")) return 4000000;
-  if (text.includes("1.5–3")) return 2200000;
-  if (text.includes("800 אלף")) return 1100000;
-  if (text.includes("500–800")) return 650000;
-  if (text.includes("250–500")) return 375000;
-  if (text.includes("עד 250")) return 200000;
-
-  return fallback;
-}
-
-function riskPoints(text: string | undefined) {
-  if (!text) return 0;
-  if (text.includes("גבוה") || text.includes("לא יציבה") || text.includes("קשה") || text.includes("סיכון")) return 18;
-  if (text.includes("בינוני") || text.includes("אולי") || text.includes("חלקית")) return 10;
-  if (text.includes("נמוך") || text.includes("יציבה") || text.includes("טוב") || text.includes("לא")) return 3;
-  return 7;
-}
-
 export default function ResultPage() {
-  const [answers, setAnswers] = useState<Answers>({});
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+
+  const [income, setIncome] = useState(22000);
+  const [homePrice, setHomePrice] = useState(2400000);
+  const [equity, setEquity] = useState(600000);
+  const [mortgagePayment, setMortgagePayment] = useState(7800);
+  const [expenses, setExpenses] = useState(9500);
+  const [loans, setLoans] = useState(1500);
+  const [children, setChildren] = useState(2);
+  const [childCosts, setChildCosts] = useState(3500);
+  const [transport, setTransport] = useState(2500);
+  const [savings, setSavings] = useState(180000);
+  const [interestShock, setInterestShock] = useState(1.5);
+  const [housingGrowth, setHousingGrowth] = useState(3);
 
   useEffect(() => {
     const raw = localStorage.getItem("homewise_answers");
     if (raw) setAnswers(JSON.parse(raw));
   }, []);
 
-  const income = valueFromRange(answers.monthly_income || answers.income, 22000);
-  const homePrice = valueFromRange(answers.homePrice || answers.home_price, 2400000);
-  const equity = valueFromRange(answers.equity, 600000);
-  const mortgage = Math.max(homePrice - equity, 0);
-
-  const baseRisk =
-    riskPoints(answers.jobStability || answers.income_stability) +
-    riskPoints(answers.existingLoans || answers.current_loans) +
-    riskPoints(answers.transport) +
-    riskPoints(answers.education) +
-    riskPoints(answers.monthlyExpenses || answers.monthly_expenses) +
-    riskPoints(answers.emergency || answers.emergency_fund) +
-    riskPoints(answers.careerRisk || answers.career_risk);
-
-  const monthlyMortgage = Math.round(mortgage * 0.0052);
-  const loadRatio = Math.round((monthlyMortgage / Math.max(income, 1)) * 100);
-  const stressScore = Math.min(96, Math.max(12, loadRatio + baseRisk));
-  const freedomScore = Math.max(4, 100 - stressScore);
+  const mortgageAmount = Math.max(homePrice - equity, 0);
+  const equityPercent = Math.round((equity / Math.max(homePrice, 1)) * 100);
 
   const timeline = useMemo(() => {
-    return Array.from({ length: 31 }, (_, year) => {
-      const incomeGrowth = income * Math.pow(1.025, year);
-      const expenseGrowth = income * 0.48 * Math.pow(1.035, year);
-      const childPressure = year > 2 ? income * 0.08 : 0;
-      const mortgagePressure = monthlyMortgage * Math.pow(1.012, year);
-      const pressure = Math.round(((expenseGrowth + childPressure + mortgagePressure) / incomeGrowth) * 100);
+    return Array.from({ length: 31 }, (_, i) => {
+      const futureIncome = income * Math.pow(1.025, i);
+      const futureExpenses =
+        (expenses + loans + transport + childCosts + children * 1200) *
+        Math.pow(1.035, i);
+
+      const futureMortgage =
+        mortgagePayment * Math.pow(1 + interestShock / 100, i / 5);
+
+      const pressure = Math.round(
+        ((futureExpenses + futureMortgage) / Math.max(futureIncome, 1)) * 100
+      );
+
       return {
-        year: 2026 + year,
-        score: Math.min(100, Math.max(10, pressure)),
+        year: 2026 + i,
+        pressure: Math.min(100, Math.max(10, pressure)),
       };
     });
-  }, [income, monthlyMortgage]);
+  }, [income, mortgagePayment, expenses, loans, children, childCosts, transport, interestShock]);
+
+  const avgPressure = Math.round(
+    timeline.reduce((sum, x) => sum + x.pressure, 0) / timeline.length
+  );
+
+  const stressScore = Math.min(
+    98,
+    Math.max(
+      5,
+      avgPressure +
+        (equityPercent < 25 ? 12 : 0) +
+        (savings < expenses * 6 ? 10 : 0)
+    )
+  );
+
+  const freedomScore = Math.max(2, 100 - stressScore);
 
   const insights = [
-    stressScore > 75
-      ? "המערכת מזהה סיכון גבוה ללחץ כלכלי עתידי. הקנייה אפשרית, אבל עלולה לצמצם משמעותית את החופש הכלכלי."
-      : "המערכת מזהה עומס סביר, אך עדיין כדאי לבדוק תרחישי לחץ לפני התחייבות ארוכת טווח.",
-    loadRatio > 35
-      ? "החזר המשכנתא ביחס להכנסה גבוה. מומלץ להקטין החזר חודשי או להגדיל הון עצמי."
-      : "יחס ההחזר להכנסה נראה סביר יחסית, אך יש לבדוק הוצאות ילדים, תחבורה ושינויים בהכנסה.",
-    equity / homePrice < 0.3
-      ? "ההון העצמי נמוך יחסית למחיר הבית. זה מגדיל תלות במשכנתא ובריבית."
-      : "ההון העצמי נותן בסיס טוב יותר ומקטין את הסיכון העתידי.",
+    equityPercent < 30
+      ? "ההון העצמי נמוך יחסית למחיר הבית. הגדלת ההון העצמי תקטין את המשכנתא, את ההחזר ואת הסיכון העתידי."
+      : "ההון העצמי שלך נותן בסיס טוב יותר לעסקה ומקטין תלות בריבית.",
+
+    mortgagePayment / Math.max(income, 1) > 0.35
+      ? "החזר המשכנתא גבוה ביחס להכנסה. מומלץ לבדוק בית זול יותר, פריסה אחרת או הגדלת הון עצמי."
+      : "יחס ההחזר להכנסה נראה סביר, אך עדיין צריך לבדוק הוצאות ילדים, תחבורה ושינויים עתידיים.",
+
+    savings < expenses * 6
+      ? "כרית הביטחון נמוכה. לפני רכישה מומלץ לשמור לפחות 6 חודשי הוצאות בצד."
+      : "כרית הביטחון טובה יחסית ומאפשרת להתמודד טוב יותר עם הפתעות.",
+
+    children > 1
+      ? "הוצאות ילדים וחינוך הן אחד הגורמים המשמעותיים ביותר ב־30 שנה קדימה. כדאי לחשב גנים, חוגים, לימודים ותחבורה."
+      : "גם אם אין הרבה ילדים היום, כדאי לבדוק תרחיש של הרחבת משפחה לפני התחייבות למשכנתא.",
   ];
 
-  const improvements = [
-    "להגדיל הון עצמי לפני רכישה.",
-    "להקטין את מחיר הבית או לבחור אזור זול יותר.",
-    "להפחית הלוואות קיימות לפני לקיחת משכנתא.",
-    "לשמור כרית ביטחון של לפחות 6 חודשי הוצאות.",
-    "לבנות תרחיש שמרני עם ילד נוסף, עליית ריבית וירידה זמנית בהכנסה.",
+  const recommendations = [
+    "בדוק/י מחיר בית נמוך ב־5%–10% והשווה את הירידה בציון הלחץ.",
+    "נסה/י להגדיל הון עצמי ולראות איך ההחזר והגרף משתפרים.",
+    "הפחת/י הלוואות קיימות לפני לקיחת משכנתא.",
+    "השאר/י כרית ביטחון של לפחות 6 חודשי הוצאות.",
+    "בדוק/י תרחיש שמרני: ריבית עולה, ילד נוסף, והכנסה שלא גדלה.",
   ];
 
   return (
-    <main className="relative min-h-screen overflow-hidden px-6 py-12 text-white print:bg-white print:text-black" dir="rtl">
-      <div className="absolute inset-0 bg-cover bg-center scale-105 print:hidden" style={{ backgroundImage: "url('/backgrounds/home-bg.png')" }} />
-      <div className="absolute inset-0 bg-black/45 print:hidden" />
+    <main className="relative min-h-screen overflow-hidden px-6 py-12 text-white" dir="rtl">
+      <div
+        className="absolute inset-0 bg-cover bg-center scale-105"
+        style={{ backgroundImage: "url('/backgrounds/home-bg.png')" }}
+      />
+      <div className="absolute inset-0 bg-black/50" />
 
       <div className="relative z-10 mx-auto max-w-7xl">
-        <section className="rounded-[40px] border border-white/20 bg-black/45 p-10 backdrop-blur-2xl print:border-black print:bg-white">
+        <section className="rounded-[40px] border border-white/20 bg-black/45 p-10 backdrop-blur-2xl">
           <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
             <div>
-              <div className="text-cyan-300 font-bold tracking-[0.4em] print:text-black">HOMEWISE AI</div>
+              <div className="font-bold tracking-[0.4em] text-cyan-300">
+                HOMEWISE AI
+              </div>
               <h1 className="mt-4 text-5xl font-black">דוח ניתוח רכישת בית</h1>
-              <p className="mt-3 text-zinc-300 print:text-black">תחזית עומס כלכלי ל־30 שנה קדימה</p>
+              <p className="mt-3 text-zinc-300">
+                שנה נתונים וראה איך מצבך הכלכלי משתנה ל־30 שנה קדימה.
+              </p>
             </div>
 
-            <button onClick={() => window.print()} className="rounded-full bg-white px-8 py-4 font-black text-black print:hidden">
+            <button
+              onClick={() => window.print()}
+              className="rounded-full bg-white px-8 py-4 font-black text-black"
+            >
               גרסה להדפסה
             </button>
           </div>
 
-          <div className="mt-10 grid gap-6 md:grid-cols-3">
+          <div className="mt-10 grid gap-6 md:grid-cols-4">
             <Card title="ציון לחץ עתידי" value={`${stressScore}%`} danger />
             <Card title="חופש כלכלי" value={`${freedomScore}%`} />
-            <Card title="החזר משוער" value={`${monthlyMortgage.toLocaleString("he-IL")} ₪`} />
+            <Card title="משכנתא משוערת" value={`${mortgageAmount.toLocaleString("he-IL")} ₪`} />
+            <Card title="הון עצמי" value={`${equityPercent}%`} />
           </div>
 
-          <div className="mt-12">
-            <h2 className="text-3xl font-black">גרף מצב כלכלי ל־30 שנה</h2>
-            <div className="mt-8 flex h-[280px] items-end gap-1 border-b border-white/20 pb-4">
-              {timeline.map((item, i) => (
-                <div key={item.year} className="flex flex-1 flex-col items-center">
-                  <div
-                    className={item.score > 80 ? "bg-red-500" : item.score > 60 ? "bg-yellow-400" : "bg-emerald-400"}
-                    style={{ height: `${item.score * 2.2}px`, width: "100%", borderRadius: "12px 12px 0 0" }}
-                  />
-                  {i % 5 === 0 && <span className="mt-2 text-xs">{item.year}</span>}
-                </div>
-              ))}
-            </div>
-          </div>
+          <div className="mt-12 grid gap-8 lg:grid-cols-2">
+            <section className="rounded-3xl border border-white/10 bg-white/10 p-8">
+              <h2 className="text-3xl font-black">שינוי נתונים</h2>
 
-          <div className="mt-12 grid gap-8 md:grid-cols-2">
-            <section>
-              <h2 className="text-3xl font-black">תובנות חכמות</h2>
-              <div className="mt-5 space-y-4">
-                {insights.map((x) => (
-                  <p key={x} className="rounded-2xl bg-white/10 p-5 leading-relaxed print:border print:border-black print:bg-white">{x}</p>
-                ))}
+              <div className="mt-8 space-y-6">
+                <Field label="הכנסה חודשית נטו" value={income} setValue={setIncome} min={8000} max={70000} step={500} />
+                <Field label="מחיר הבית" value={homePrice} setValue={setHomePrice} min={800000} max={8000000} step={50000} />
+                <Field label="שווי הון עצמי" value={equity} setValue={setEquity} min={0} max={5000000} step={25000} />
+                <Field label="החזר משכנתא חודשי" value={mortgagePayment} setValue={setMortgagePayment} min={2000} max={25000} step={250} />
+                <Field label="הוצאות שוטפות" value={expenses} setValue={setExpenses} min={3000} max={35000} step={250} />
+                <Field label="הלוואות חודשיות" value={loans} setValue={setLoans} min={0} max={20000} step={250} />
+                <Field label="מספר ילדים" value={children} setValue={setChildren} min={0} max={7} step={1} />
+                <Field label="גנים / לימודי ילדים" value={childCosts} setValue={setChildCosts} min={0} max={15000} step={250} />
+                <Field label="תחבורה חודשית" value={transport} setValue={setTransport} min={0} max={12000} step={250} />
+                <Field label="חיסכון / כרית ביטחון" value={savings} setValue={setSavings} min={0} max={1000000} step={10000} />
+                <Field label="עליית ריבית עתידית" value={interestShock} setValue={setInterestShock} min={0} max={5} step={0.25} />
+                <Field label="עליית מחירי דיור שנתית" value={housingGrowth} setValue={setHousingGrowth} min={0} max={10} step={0.5} />
               </div>
             </section>
 
-            <section>
-              <h2 className="text-3xl font-black">מה אפשר לשפר?</h2>
-              <div className="mt-5 space-y-4">
-                {improvements.map((x) => (
-                  <p key={x} className="rounded-2xl bg-cyan-400/15 p-5 leading-relaxed print:border print:border-black print:bg-white">{x}</p>
+            <section className="rounded-3xl border border-white/10 bg-white/10 p-8">
+              <h2 className="text-3xl font-black">גרף מצב כלכלי ל־30 שנה</h2>
+
+              <div className="mt-8 flex h-[300px] items-end gap-1 border-b border-white/20 pb-4">
+                {timeline.map((item, i) => (
+                  <div key={item.year} className="flex flex-1 flex-col items-center">
+                    <div
+                      className={
+                        item.pressure > 80
+                          ? "bg-red-500"
+                          : item.pressure > 60
+                          ? "bg-yellow-400"
+                          : "bg-emerald-400"
+                      }
+                      style={{
+                        height: `${item.pressure * 2.2}px`,
+                        width: "100%",
+                        borderRadius: "12px 12px 0 0",
+                      }}
+                    />
+                    {i % 5 === 0 && (
+                      <span className="mt-2 text-xs text-zinc-300">{item.year}</span>
+                    )}
+                  </div>
                 ))}
+              </div>
+
+              <div className="mt-10 grid gap-6 md:grid-cols-2">
+                <Info title="תובנות חכמות" items={insights} />
+                <Info title="מה אפשר לשפר?" items={recommendations} />
               </div>
             </section>
           </div>
@@ -164,12 +184,48 @@ export default function ResultPage() {
   );
 }
 
-function Card({ title, value, danger = false }: { title: string; value: string; danger?: boolean }) {
+function Field({ label, value, setValue, min, max, step }: any) {
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/10 p-8 print:border-black print:bg-white">
-      <div className="text-zinc-300 print:text-black">{title}</div>
-      <div className={`mt-4 text-6xl font-black ${danger ? "text-red-400" : "text-emerald-400"} print:text-black`}>
+    <label className="block">
+      <div className="mb-2 flex justify-between gap-4 text-zinc-200">
+        <span>{label}</span>
+        <span className="font-black text-white">{Number(value).toLocaleString("he-IL")}</span>
+      </div>
+
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => setValue(Number(e.target.value))}
+        className="w-full"
+      />
+    </label>
+  );
+}
+
+function Card({ title, value, danger = false }: any) {
+  return (
+    <div className="rounded-3xl border border-white/10 bg-white/10 p-7">
+      <div className="text-zinc-300">{title}</div>
+      <div className={`mt-4 text-5xl font-black ${danger ? "text-red-400" : "text-emerald-400"}`}>
         {value}
+      </div>
+    </div>
+  );
+}
+
+function Info({ title, items }: { title: string; items: string[] }) {
+  return (
+    <div>
+      <h3 className="text-2xl font-black">{title}</h3>
+      <div className="mt-4 space-y-3">
+        {items.map((x) => (
+          <div key={x} className="rounded-2xl bg-black/35 p-4 leading-relaxed text-zinc-100">
+            {x}
+          </div>
+        ))}
       </div>
     </div>
   );
