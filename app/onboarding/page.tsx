@@ -13,16 +13,16 @@ const questions = [
 
   {
     id: "age",
-    type: "number",
+    type: "choice",
     question: "בן/בת כמה את/ה?",
-    placeholder: "הקלד גיל",
+    options: ["נמוך", "בינוני", "גבוה", "גבוה מאוד"],
   },
 
   {
     id: "income",
-    type: "number",
+    type: "choice",
     question: "מה ההכנסה החודשית נטו של משק הבית?",
-    placeholder: "₪",
+    options: ["נמוך", "בינוני", "גבוה", "גבוה מאוד"],
   },
 
   {
@@ -39,37 +39,37 @@ const questions = [
 
   {
     id: "home_price",
-    type: "number",
+    type: "choice",
     question: "מה שווי הבית שאתם רוצים לקנות?",
-    placeholder: "₪",
+    options: ["נמוך", "בינוני", "גבוה", "גבוה מאוד"],
   },
 
   {
     id: "equity",
-    type: "number",
+    type: "choice",
     question: "כמה הון עצמי יש לכם?",
-    placeholder: "₪",
+    options: ["נמוך", "בינוני", "גבוה", "גבוה מאוד"],
   },
 
   {
     id: "mortgage",
-    type: "number",
+    type: "choice",
     question: "מה גובה המשכנתא הצפויה?",
-    placeholder: "₪",
+    options: ["נמוך", "בינוני", "גבוה", "גבוה מאוד"],
   },
 
   {
     id: "loans",
-    type: "number",
+    type: "choice",
     question: "כמה החזרי הלוואות יש לכם בחודש?",
-    placeholder: "₪",
+    options: ["נמוך", "בינוני", "גבוה", "גבוה מאוד"],
   },
 
   {
     id: "expenses",
-    type: "number",
+    type: "choice",
     question: "מה ההוצאות החודשיות הקבועות שלכם?",
-    placeholder: "₪",
+    options: ["נמוך", "בינוני", "גבוה", "גבוה מאוד"],
   },
 
   {
@@ -243,7 +243,7 @@ export default function OnboardingPage() {
           )}
 
           {/* NUMBER */}
-          {current.type === "number" && (
+          {false && (
             <NumberInput
               placeholder={current.placeholder || ""}
               onNext={next}
@@ -331,5 +331,6 @@ function NumberInput({
     </div>
   );
 }
+
 
 
