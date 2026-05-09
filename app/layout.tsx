@@ -5,9 +5,13 @@ import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
   title: "HomeWise AI",
+
   description:
     "AI system for forecasting financial stability and future pressure before buying a home.",
-  
+
+  verification: {
+    google: <meta name="google-site-verification" content="MZIyoRBjixk_eFnDus9vA30qqovOrpYnD8sDEZeyOe4" />,
+  },
 };
 
 export default function RootLayout({
@@ -20,10 +24,8 @@ export default function RootLayout({
       <body>
         <RRLogo />
         {children}
-              <Analytics />
+        <Analytics />
       </body>
     </html>
   );
 }
-
-
