@@ -216,7 +216,7 @@ export default function OnboardingPage() {
           {current.type === "choice" && (
             <div className="mt-14 grid gap-5 md:grid-cols-2">
 
-              {current.options.map((option: string) => (
+              {current.options?.map((option: string) => (
                 <button
                   key={option}
                   onClick={() => next(option)}
@@ -331,3 +331,4 @@ function NumberInput({
     </div>
   );
 }
+
