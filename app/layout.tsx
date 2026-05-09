@@ -4,13 +4,11 @@ import RRLogo from "@/components/RRLogo";
 import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
-  title: "HomeWise AI",
-
+  title: "HomeWise AI | בדיקת עתיד כלכלי לפני קניית בית",
   description:
-    "AI system for forecasting financial stability and future pressure before buying a home.",
-
+    "מערכת AI שמדמה לחץ כלכלי עתידי, יציבות וחופש כלכלי לפני קניית בית.",
   verification: {
-    google: " google4ec28c5d5dacd3af.html",
+    google: "MZIyoRBjixk_eFnDus9vA30qqovOrpY",
   },
 };
 
